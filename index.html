@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Top Secret Mission 💛</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- React & ReactDOM -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  
+  <!-- Babel (to compile React in the browser) -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Nunito:wght@400;600;800&family=Libre+Barcode+128&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      background-color: #fffbeb;
+      margin: 0;
+      font-family: 'Nunito', sans-serif;
+      overflow-x: hidden;
+      /* Prevent scrolling on mobile while playing games */
+      overscroll-behavior-y: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    .font-display { font-family: 'Great Vibes', cursive; }
+    .font-barcode { font-family: 'Libre Barcode 128', cursive; }
+    
+    /* Glassmorphism */
+    .glass-card {
+      background: rgba(255, 255, 255, 0.6);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(253, 224, 71, 0.5);
+      box-shadow: 0 8px 32px 0 rgba(234, 179, 8, 0.2);
+    }
+
+    /* Golden Ticket Style */
+    .golden-ticket {
+      background: linear-gradient(135deg, #fef9c3 0%, #fcd34d 50%, #fef9c3 100%);
+      border: 4px solid #b45309;
+      box-shadow: 0 10px 40px rgba(180, 83, 9, 0.4);
+      position: relative;
+    }
+    .golden-ticket::before {
+      content: '';
+      position: absolute;
+      inset: 4px;
+      border: 2px dashed #b45309;
+      pointer-events: none;
+    }
+
+    .text-glow { text-shadow: 0 0 20px rgba(234, 179, 8, 0.4); }
+    
+    /* Animations */
+    .shimmer {
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent);
+      background-size: 200% 100%;
+      animation: shimmer 2s infinite;
+    }
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      75% { transform: translateX(5px); }
+    }
+    .animate-shake { animation: shake 0.2s ease-in-out; }
+
+    /* Flip Card Utilities */
+    .rotate-y-180 { transform: rotateY(180deg); }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef, useCallback } = React;
+
+    // --- ICONS (SVG Components) ---
+    // Manually defining icons so no external library is needed
+    const IconBase = ({ children, className, size = 24, ...props }) => (
+      <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+        {children}
+      </svg>
+    );
+
+    const Heart = (props) => <IconBase {...props}><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></IconBase>;
+    const Lock = (props) => <IconBase {...props}><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></IconBase>;
+    const LockOpen = (props) => <IconBase {...props}><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 9.9-1" /></IconBase>;
+    const Key = (props) => <IconBase {...props}><circle cx="7.5" cy="15.5" r="5.5" /><path d="m21 2-9.6 9.6" /><path d="m15.5 7.5 3 3L22 7l-3-3" /></IconBase>;
+    const Gift = (props) => <IconBase {...props}><rect x="3" y="8" width="18" height="4" rx="1" /><path d="M12 8v13" /><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7" /><path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.9 4.9 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5" /></IconBase>;
+    const Play = (props) => <IconBase {...props}><polygon points="5 3 19 12 5 21 5 3" /></IconBase>;
+
+    // --- UTILITIES ---
+    const fireConfetti = () => {
+      const canvas = document.createElement('canvas');
+      canvas.style.position = 'fixed';
+      canvas.style.top = '0';
+      canvas.style.left = '0';
+      canvas.style.width = '100%';
+      canvas.style.height = '100%';
+      canvas.style.pointerEvents = 'none';
+      canvas.style.zIndex = '9999';
+      document.body.appendChild(canvas);
+
+      const ctx = canvas.getContext('2d');
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      const particles = [];
+      const colors = ['#f59e0b', '#fbbf24', '#fef08a', '#ffffff', '#fbcfe8'];
+
+      for (let i = 0; i < 200; i++) {
+        particles.push({
+          x: window.innerWidth / 2,
+          y: window.innerHeight / 2,
+          vx: (Math.random() - 0.5) * 25,
+          vy: (Math.random() - 0.5) * 25,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          size: Math.random() * 8 + 2,
+          life: 150,
+          gravity: 0.2
+        });
+      }
+
+      const animate = () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        let active = false;
+        particles.forEach(p => {
+          if (p.life > 0) {
+            active = true;
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += p.gravity;
+            p.vx *= 0.96;
+            p.vy *= 0.96;
+            p.life--;
+            ctx.fillStyle = p.color;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        });
+
+        if (active) requestAnimationFrame(animate);
+        else document.body.removeChild(canvas);
+      };
+      animate();
+    };
+
+    const vibrate = (pattern) => {
+      if (navigator.vibrate) {
+        navigator.vibrate(pattern);
+      }
+    };
+
+    // --- COMPONENTS ---
+
+    const FloatingBackground = () => {
+      const canvasRef = useRef(null);
+
+      useEffect(() => {
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
+        let animationFrameId;
+        let particles = [];
+
+        const resize = () => {
+          canvas.width = window.innerWidth;
+          canvas.height = window.innerHeight;
+        };
+        window.addEventListener('resize', resize);
+        resize();
+
+        const createParticle = () => {
+          return {
+            x: Math.random() * canvas.width,
+            y: canvas.height + 20,
+            size: Math.random() * 25 + 10,
+            speed: Math.random() * 1.5 + 0.5,
+            opacity: Math.random() * 0.3 + 0.1,
+            oscillation: Math.random() * 2,
+            text: Math.random() > 0.6 ? '💛' : (Math.random() > 0.5 ? '🌻' : '✨')
+          };
+        };
+
+        const animate = () => {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          if (Math.random() < 0.04) particles.push(createParticle());
+
+          particles.forEach((p, index) => {
+            p.y -= p.speed;
+            p.x += Math.sin(p.y * 0.01 + p.oscillation) * 0.5;
+            ctx.font = `${p.size}px serif`;
+            ctx.globalAlpha = p.opacity;
+            ctx.fillStyle = "#d97706";
+            ctx.fillText(p.text, p.x, p.y);
+            if (p.y < -50) particles.splice(index, 1);
+          });
+
+          animationFrameId = requestAnimationFrame(animate);
+        };
+
+        animate();
+        return () => {
+          window.removeEventListener('resize', resize);
+          cancelAnimationFrame(animationFrameId);
+        };
+      }, []);
+
+      return <canvas ref={canvasRef} className="fixed top-0 left-0 w-full h-full pointer-events-none z-0 opacity-50" />;
+    };
+
+    const VibeCharger = ({ onWin }) => {
+      const [charge, setCharge] = useState(20);
+      const [message, setMessage] = useState("Tap to Fill My Heart!");
+      const [gameWon, setGameWon] = useState(false);
+
+      useEffect(() => {
+        if (gameWon) return;
+        const interval = setInterval(() => {
+          setCharge(prev => {
+            const drop = 1.5; 
+            return Math.max(0, prev - drop);
+          });
+        }, 100);
+        return () => clearInterval(interval);
+      }, [gameWon]);
+
+      useEffect(() => {
+        if (charge >= 100 && !gameWon) {
+          setGameWon(true);
+          setMessage("HEART OVERFLOWING!");
+          vibrate([100, 50, 100]); 
+          onWin();
+        } else if (!gameWon) {
+          if (charge < 20) setMessage("Need more love! Tap tap!");
+          else if (charge > 80) setMessage("So close!");
+          else setMessage("Keep Tapping!");
+        }
+      }, [charge, gameWon, onWin]);
+
+      const handleTap = () => {
+        if (gameWon) return;
+        vibrate(10); 
+        setCharge(prev => Math.min(100, prev + 8)); 
+      };
+
+      return (
+        <div className="flex flex-col items-center justify-center h-full gap-6 select-none">
+          <div className={`text-xl md:text-2xl font-bold font-body transition-colors text-center ${charge < 30 ? 'text-rose-400 animate-pulse' : 'text-yellow-600'}`}>
+            {message}
+          </div>
+          <div className="relative w-40 h-40 md:w-48 md:h-48">
+             <Heart className="w-full h-full text-yellow-100 fill-yellow-50 stroke-2 stroke-yellow-300 absolute" />
+             <div className="absolute bottom-0 left-0 w-full overflow-hidden transition-all duration-100" style={{ height: `${charge}%` }}>
+                <Heart className="w-40 h-40 md:w-48 md:h-48 text-yellow-500 fill-yellow-500 absolute bottom-0 left-0" />
+             </div>
+             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <span className="text-2xl font-bold text-white drop-shadow-md">{Math.floor(charge)}%</span>
+             </div>
+          </div>
+          <button
+            onMouseDown={handleTap}
+            onTouchStart={(e) => { e.preventDefault(); handleTap(); }}
+            className="active:scale-90 transform transition-transform bg-gradient-to-r from-yellow-400 to-amber-500 hover:from-yellow-500 hover:to-amber-600 text-white font-bold py-4 px-8 rounded-full shadow-lg border-b-4 border-amber-600 flex items-center gap-2 text-lg md:text-xl touch-none"
+          >
+            <Heart size={24} fill="currentColor" /> SEND LOVE
+          </button>
+        </div>
+      );
+    };
+
+    const CatcherGame = ({ onWin }) => {
+      const [score, setScore] = useState(0);
+      const [playerX, setPlayerX] = useState(50);
+      const [items, setItems] = useState([]);
+      const [gameActive, setGameActive] = useState(false);
+      const gameStateRef = useRef({ score: 0, playerX: 50, items: [], isActive: false, lastSpawn: 0 });
+      const requestRef = useRef();
+      const WIN_SCORE = 10;
+
+      const startGame = () => {
+        gameStateRef.current = { score: 0, playerX: 50, items: [], isActive: true, lastSpawn: 0 };
+        setScore(0); setItems([]); setGameActive(true);
+        requestRef.current = requestAnimationFrame(gameLoop);
+      };
+
+      const gameLoop = (time) => {
+        const state = gameStateRef.current;
+        if (!state.isActive) return;
+        if (time - state.lastSpawn > 600) {
+          const type = Math.random() > 0.3 ? 'good' : 'bad';
+          state.items.push({
+            id: Date.now(),
+            x: Math.random() * 90 + 5,
+            y: -50,
+            type: type,
+            emoji: type === 'good' ? (Math.random() > 0.6 ? '💛' : (Math.random() > 0.5 ? '💌' : '🌻')) : '💔'
+          });
+          state.lastSpawn = time;
+        }
+        const nextItems = [];
+        state.items.forEach(item => {
+          item.y += 4; 
+          const isAtBottom = item.y > 320 && item.y < 380;
+          const isCaught = Math.abs(item.x - state.playerX) < 15;
+          if (isAtBottom && isCaught) {
+            if (item.type === 'good') {
+              state.score += 1;
+              if (state.score % 2 === 0) vibrate(20); 
+            } else {
+              state.score = Math.max(0, state.score - 2);
+              vibrate(100); 
+            }
+          } else if (item.y < 450) nextItems.push(item);
+        });
+        state.items = nextItems;
+        setScore(state.score); setItems([...state.items]);
+        if (state.score >= WIN_SCORE) {
+          state.isActive = false; setGameActive(false); onWin();
+        } else {
+          requestRef.current = requestAnimationFrame(gameLoop);
+        }
+      };
+
+      useEffect(() => { return () => cancelAnimationFrame(requestRef.current); }, []);
+
+      const handleInput = (clientX, rect) => {
+         const percentage = Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100));
+         setPlayerX(percentage);
+         gameStateRef.current.playerX = percentage;
+      };
+
+      const handleMouseMove = (e) => {
+        if (!e.currentTarget) return;
+        handleInput(e.clientX, e.currentTarget.getBoundingClientRect());
+      };
+      
+      const handleTouchMove = (e) => {
+        if (!e.currentTarget) return;
+        handleInput(e.touches[0].clientX, e.currentTarget.getBoundingClientRect());
+      };
+
+      return (
+        <div 
+          className="relative w-full h-[400px] bg-gradient-to-b from-yellow-50 to-amber-50 rounded-2xl overflow-hidden border-4 border-yellow-300 shadow-inner cursor-none touch-none select-none"
+          onMouseMove={handleMouseMove}
+          onTouchMove={handleTouchMove}
+        >
+          {!gameActive && score === 0 && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/60 z-20 backdrop-blur-sm">
+              <h3 className="text-xl md:text-2xl font-bold text-yellow-600 mb-2 font-display">Catch My Love!</h3>
+              <p className="text-yellow-800 mb-4 text-center px-4 text-sm md:text-base">Collect 10 Hearts & Letters.<br/>Avoid the heartbreak!</p>
+              <button 
+                onClick={startGame}
+                className="bg-yellow-500 text-white px-6 py-2 rounded-full font-bold shadow-lg animate-bounce flex items-center gap-2 hover:bg-yellow-400"
+              >
+                <Play size={16} fill="white" /> Start Game
+              </button>
+            </div>
+          )}
+          <div className="absolute top-4 right-4 bg-white/80 px-4 py-1 rounded-full font-bold text-yellow-600 shadow z-10">Score: {score}/{WIN_SCORE}</div>
+          {items.map(item => (
+            <div key={item.id} className="absolute text-2xl transition-transform" style={{ left: `${item.x}%`, top: `${item.y}px`, transform: 'translateX(-50%)' }}>
+              {item.emoji}
+            </div>
+          ))}
+          <div className="absolute bottom-4 text-4xl transition-all duration-75 ease-out" style={{ left: `${playerX}%`, transform: 'translateX(-50%)' }}>🧸</div>
+        </div>
+      );
+    };
+
+    const LoveLockGame = ({ onWin }) => {
+      const [angle, setAngle] = useState(0);
+      const [unlockedCount, setUnlockedCount] = useState(0);
+      const [isSpinning, setIsSpinning] = useState(true);
+      const [shake, setShake] = useState(false);
+      
+      const requestRef = useRef();
+      
+      const isInsideZone = (angle > 330 || angle < 30);
+
+      const spin = useCallback(() => {
+        if (!isSpinning) return;
+        setAngle(prev => (prev + 4) % 360);
+        requestRef.current = requestAnimationFrame(spin);
+      }, [isSpinning]);
+
+      useEffect(() => {
+        requestRef.current = requestAnimationFrame(spin);
+        return () => cancelAnimationFrame(requestRef.current);
+      }, [spin]);
+
+      const handleUnlock = () => {
+        if (isInsideZone) {
+          const newCount = unlockedCount + 1;
+          setUnlockedCount(newCount);
+          vibrate(50); 
+          if (newCount >= 3) {
+            setIsSpinning(false);
+            onWin();
+          }
+        } else {
+          setShake(true);
+          vibrate(100); 
+          setTimeout(() => setShake(false), 500);
+        }
+      };
+
+      return (
+        <div className="flex flex-col items-center justify-center h-full gap-8">
+          <div className="flex gap-2 mb-4">
+            {[0, 1, 2].map(i => (
+              <div key={i} className={`w-4 h-4 rounded-full transition-colors ${i < unlockedCount ? 'bg-green-500' : 'bg-gray-200'}`}></div>
+            ))}
+          </div>
+          
+          <div className="relative w-48 h-48">
+            <div className={`w-full h-full rounded-full border-8 border-yellow-200 bg-white shadow-inner flex items-center justify-center relative ${shake ? 'animate-shake' : ''}`}>
+               <div className="absolute -top-1 w-12 h-6 bg-green-200/50 rounded-b-xl blur-sm z-0"></div>
+               
+               {unlockedCount >= 3 ? (
+                 <LockOpen size={64} className="text-yellow-500 animate-bounce" />
+               ) : (
+                 <Lock size={64} className="text-gray-300" />
+               )}
+
+               <div 
+                 className="absolute w-full h-full rounded-full pointer-events-none"
+                 style={{ transform: `rotate(${angle}deg)` }}
+               >
+                  <div className="absolute top-2 left-1/2 -translate-x-1/2 w-6 h-6 bg-yellow-500 rounded-full shadow-md border-2 border-white"></div>
+               </div>
+            </div>
+          </div>
+
+          <button
+            onMouseDown={handleUnlock}
+            onTouchStart={(e) => { e.preventDefault(); handleUnlock(); }}
+            className="active:scale-95 transform transition-transform bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-4 px-12 rounded-full shadow-xl flex items-center gap-2 text-xl touch-none"
+          >
+            <Key size={24} /> TAP TO UNLOCK
+          </button>
+          
+          <p className="text-sm text-yellow-700 font-semibold">Stop the key in the green zone!</p>
+        </div>
+      );
+    };
+
+    const App = () => {
+      const [stage, setStage] = useState('welcome');
+      const [scanProgress, setScanProgress] = useState(0);
+      const [scanText, setScanText] = useState("Initializing...");
+      
+      const [cards, setCards] = useState([]);
+      const [flipped, setFlipped] = useState([]);
+      const [matched, setMatched] = useState([]);
+
+      const [noButtonPos, setNoButtonPos] = useState({ x: 0, y: 0 });
+
+      const startJourney = () => setStage('scan');
+
+      useEffect(() => {
+        if (stage === 'scan') {
+          const texts = ["Scanning Beauty Levels...", "Detecting Lovelyness...", "Analysing Chemistry...", "Match Found: 100%"];
+          let prog = 0;
+          const interval = setInterval(() => {
+            prog += 1;
+            setScanProgress(prog);
+            setScanText(texts[Math.min(Math.floor((prog/100)*texts.length), texts.length-1)]);
+            if (prog >= 100) {
+              clearInterval(interval);
+              setTimeout(() => setStage('memory'), 800);
+            }
+          }, 40);
+          return () => clearInterval(interval);
+        }
+      }, [stage]);
+
+      useEffect(() => {
+        if (stage === 'memory') {
+          const emojis = ['💛', '💍', '💌', '🌻'];
+          const deck = [...emojis, ...emojis]
+            .sort(() => Math.random() - 0.5)
+            .map((emoji, id) => ({ id, emoji }));
+          setCards(deck);
+        }
+      }, [stage]);
+
+      const handleCardClick = (id) => {
+        if (flipped.length === 2 || matched.includes(id) || flipped.includes(id)) return;
+        const newFlipped = [...flipped, id];
+        setFlipped(newFlipped);
+        if (newFlipped.length === 2) {
+          const [a, b] = newFlipped;
+          if (cards[a].emoji === cards[b].emoji) {
+            setMatched([...matched, a, b]);
+            setFlipped([]);
+            if (matched.length + 2 === cards.length) {
+              fireConfetti();
+              setTimeout(() => setStage('charger'), 1500);
+            }
+          } else {
+            setTimeout(() => setFlipped([]), 800);
+          }
+        }
+      };
+
+      const moveNoButton = () => {
+        const x = (Math.random() - 0.5) * 150; 
+        const y = (Math.random() - 0.5) * 150;
+        setNoButtonPos({ x, y });
+      };
+
+      return (
+        <div className="min-h-screen w-full bg-[#fffbeb] text-yellow-900 font-sans flex flex-col items-center justify-center relative selection:bg-yellow-200 p-2 md:p-0">
+          <FloatingBackground />
+          
+          <div className="z-10 w-full max-w-lg p-4 md:p-6 transition-all duration-700 font-body my-auto">
+            
+            {stage === 'welcome' && (
+              <div className="glass-card p-6 md:p-10 rounded-[2rem] text-center transform hover:scale-[1.02] transition-transform duration-500 border-yellow-300">
+                <div className="inline-flex items-center justify-center w-16 h-16 md:w-20 md:h-20 bg-gradient-to-tr from-yellow-400 to-orange-300 rounded-full mb-6 shadow-lg animate-pulse">
+                  <Lock className="w-8 h-8 md:w-10 md:h-10 text-white" />
+                </div>
+                <h1 className="text-5xl md:text-6xl font-display text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 to-amber-600 mb-4 text-glow pb-2 leading-relaxed">
+                  Complete if You <br/> Like me
+                </h1>
+                <p className="text-yellow-800 mb-8 text-lg md:text-xl font-light">
+                  Authorization required to see <br/> What's Inside.
+                </p>
+                <button 
+                  onClick={startJourney}
+                  className="w-full bg-gradient-to-r from-yellow-400 to-amber-500 text-white font-bold py-4 px-8 rounded-xl shadow-lg transform transition hover:-translate-y-1 hover:shadow-yellow-300/50 flex items-center justify-center gap-3 text-lg"
+                >
+                  Verify Identity <Heart size={20} fill="white" />
+                </button>
+              </div>
+            )}
+
+            {stage === 'scan' && (
+              <div className="glass-card p-8 md:p-10 rounded-[2rem] text-center border-yellow-300">
+                <div className="relative w-24 h-24 md:w-32 md:h-32 mx-auto mb-8">
+                   <div className="absolute inset-0 rounded-full border-4 border-yellow-100"></div>
+                   <div className="absolute inset-0 rounded-full border-4 border-t-yellow-500 animate-spin"></div>
+                   <div className="absolute inset-0 flex items-center justify-center">
+                     <Heart className="w-12 h-12 md:w-16 md:h-16 text-yellow-500 animate-pulse fill-yellow-100" />
+                   </div>
+                </div>
+                <h2 className="text-2xl md:text-3xl font-bold text-yellow-700 mb-4">Scanning...</h2>
+                <div className="h-3 w-full bg-yellow-100 rounded-full overflow-hidden mb-4">
+                  <div className="h-full bg-gradient-to-r from-yellow-400 to-orange-500 transition-all duration-100" style={{ width: `${scanProgress}%` }}></div>
+                </div>
+                <p className="text-yellow-600 font-semibold italic">{scanText}</p>
+              </div>
+            )}
+
+            {stage === 'memory' && (
+              <div className="glass-card p-4 md:p-8 rounded-[2rem] border-yellow-300">
+                <h2 className="text-center text-3xl md:text-4xl font-display text-yellow-600 mb-2">Level 1</h2>
+                <p className="text-center text-yellow-800 mb-6 font-semibold">Match the Romance</p>
+                <div className="grid grid-cols-4 gap-2 md:gap-4">
+                  {cards.map((card, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleCardClick(index)}
+                      className={`aspect-square rounded-xl md:rounded-2xl text-4xl md:text-6xl flex items-center justify-center transition-all duration-500 transform border-2 ${
+                        flipped.includes(index) || matched.includes(index)
+                          ? 'rotate-y-180 bg-white border-yellow-400 shadow-inner scale-95'
+                          : 'bg-gradient-to-br from-yellow-300 to-amber-400 border-transparent shadow-lg hover:-translate-y-1'
+                      }`}
+                      style={{ perspective: '1000px' }}
+                    >
+                      {(flipped.includes(index) || matched.includes(index)) ? card.emoji : <span className="text-white/50 text-xl md:text-2xl">?</span>}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {stage === 'charger' && (
+              <div className="glass-card p-6 md:p-8 rounded-[2rem] border-yellow-300 min-h-[400px]">
+                 <h2 className="text-center text-3xl md:text-4xl font-display text-yellow-600 mb-2">Level 2</h2>
+                 <p className="text-center text-yellow-800 mb-4 font-semibold">Power Up My Courage!</p>
+                 <VibeCharger onWin={() => {
+                   fireConfetti();
+                   setTimeout(() => setStage('catcher'), 1500);
+                 }} />
+              </div>
+            )}
+
+            {stage === 'catcher' && (
+              <div className="glass-card p-4 md:p-6 rounded-[2rem] border-yellow-300">
+                <h2 className="text-center text-3xl md:text-4xl font-display text-yellow-600 mb-2">Level 3</h2>
+                <p className="text-center text-yellow-800 mb-4 font-semibold">Collect the Affection</p>
+                <CatcherGame onWin={() => {
+                  fireConfetti();
+                  setTimeout(() => setStage('lock'), 1500);
+                }} />
+              </div>
+            )}
+
+            {stage === 'lock' && (
+              <div className="glass-card p-6 md:p-8 rounded-[2rem] border-yellow-300 min-h-[400px]">
+                <h2 className="text-center text-3xl md:text-4xl font-display text-yellow-600 mb-2">Final Level</h2>
+                <p className="text-center text-yellow-800 mb-4 font-semibold">Unlock My Heart</p>
+                <LoveLockGame onWin={() => {
+                  fireConfetti();
+                  setTimeout(() => setStage('proposal'), 1500);
+                }} />
+              </div>
+            )}
+
+            {stage === 'proposal' && (
+              <div className="glass-card p-6 md:p-10 rounded-[2rem] text-center animate-fade-in relative overflow-hidden border-yellow-400">
+                <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-400"></div>
+                <Gift className="w-12 h-12 md:w-16 md:h-16 mx-auto text-yellow-500 mb-6 animate-bounce" />
+                <h2 className="text-2xl md:text-3xl font-bold text-yellow-800 mb-2">Access Granted!</h2>
+                <p className="text-yellow-700 mb-8">You have successfully unlocked everything.</p>
+                
+                <h1 className="text-4xl md:text-5xl font-display text-amber-600 mb-8 leading-tight">
+                  Will you be my <br/> Valentine?
+                </h1>
+
+                <div className="flex flex-col gap-4 items-center justify-center relative min-h-[120px]">
+                  <button 
+                    onClick={() => { fireConfetti(); setStage('success'); }}
+                    className="bg-yellow-500 hover:bg-yellow-600 text-white text-xl font-bold py-4 px-12 rounded-full shadow-xl transform transition hover:scale-110 active:scale-95 z-20 w-full max-w-xs flex items-center justify-center gap-2"
+                  >
+                    YES! 💛
+                  </button>
+                  
+                  <button 
+                    onMouseEnter={moveNoButton}
+                    onTouchStart={moveNoButton}
+                    className="text-gray-400 font-semibold py-2 px-6 rounded-full hover:bg-white/50 transition-all duration-200 absolute z-10 text-sm"
+                    style={{ transform: `translate(${noButtonPos.x}px, ${noButtonPos.y === 0 ? 80 : noButtonPos.y}px)` }}
+                  >
+                    No thanks
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {stage === 'success' && (
+              <div className="golden-ticket p-6 md:p-8 rounded-xl text-center max-w-md w-full animate-fade-in transform rotate-1 hover:rotate-0 transition-transform duration-500 mx-auto">
+                <div className="absolute inset-0 shimmer opacity-30 pointer-events-none rounded-xl"></div>
+                
+                <div className="border-b-2 border-dashed border-amber-800 pb-4 mb-4">
+                   <h1 className="text-4xl md:text-5xl font-display text-amber-800">Golden Ticket</h1>
+                   <p className="text-amber-700 text-xs md:text-sm uppercase tracking-widest mt-2">Official Valentine Document</p>
+                </div>
+
+                <div className="flex justify-between items-center mb-6 px-2 md:px-4">
+                  <div className="text-left">
+                    <p className="text-xs text-amber-600 uppercase">Passenger</p>
+                    <p className="text-lg md:text-xl font-bold text-amber-900 font-serif">Janelle Genobata</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-amber-600 uppercase">Date</p>
+                    <p className="text-lg md:text-xl font-bold text-amber-900 font-serif">March 1</p>
+                  </div>
+                </div>
+
+                <div className="bg-amber-100/50 p-4 rounded-lg border border-amber-200 mb-6">
+                  <p className="text-amber-800 italic font-serif text-base md:text-lg leading-relaxed">
+                    "This ticket entitles the bearer to one unforgettable day of full of love, Chocolae, and everlasting Care."
+                  </p>
+                </div>
+
+                <div className="flex justify-between items-end border-t-2 border-dashed border-amber-800 pt-4">
+                   <div className="flex flex-col items-start">
+                      <div className="flex gap-1 mb-1 text-amber-600">
+                         <Heart size={16} fill="currentColor" />
+                         <Heart size={16} fill="currentColor" />
+                         <Heart size={16} fill="currentColor" />
+                      </div>
+                      <span className="text-xs text-amber-700 font-bold">VERIFIED</span>
+                   </div>
+                   <div className="h-10 md:h-12 flex items-end gap-[2px] opacity-70">
+                     {[...Array(20)].map((_, i) => (
+                       <div key={i} className="bg-amber-900" style={{ width: Math.random() > 0.5 ? '2px' : '4px', height: '100%' }}></div>
+                     ))}
+                   </div>
+                </div>
+
+                <div className="absolute -bottom-6 -right-6 w-20 h-20 md:w-24 md:h-24 bg-red-700 rounded-full flex items-center justify-center shadow-lg border-4 border-red-800 rotate-12">
+                   <div className="w-16 h-16 md:w-20 md:h-20 border-2 border-red-600 rounded-full flex items-center justify-center text-red-900">
+                      <Heart size={28} fill="currentColor" />
+                   </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
