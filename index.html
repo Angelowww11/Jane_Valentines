@@ -12,7 +12,7 @@
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   
-  <!-- Babel (to compile React in the browser) -->
+  <!-- Babel -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
   <!-- Google Fonts -->
@@ -24,7 +24,6 @@
       margin: 0;
       font-family: 'Nunito', sans-serif;
       overflow-x: hidden;
-      /* Prevent scrolling on mobile while playing games */
       overscroll-behavior-y: none;
       -webkit-tap-highlight-color: transparent;
     }
@@ -34,11 +33,33 @@
     
     /* Glassmorphism */
     .glass-card {
-      background: rgba(255, 255, 255, 0.6);
+      background: rgba(255, 255, 255, 0.85); /* Increased opacity for better contrast */
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
-      border: 1px solid rgba(253, 224, 71, 0.5);
-      box-shadow: 0 8px 32px 0 rgba(234, 179, 8, 0.2);
+      border: 2px solid rgba(253, 224, 71, 0.8);
+      box-shadow: 0 10px 40px rgba(234, 179, 8, 0.2);
+    }
+
+    /* CRITICAL FIX: Explicit Gradient Classes that don't rely on Tailwind scanning */
+    .gradient-text-gold {
+      background: linear-gradient(to right, #d97706, #b45309);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      color: #d97706; /* Fallback */
+    }
+
+    .gradient-bg-gold {
+      background: linear-gradient(to right, #f59e0b, #d97706);
+      color: white;
+    }
+    
+    .gradient-bg-icon {
+      background: linear-gradient(to top right, #facc15, #fb923c);
+    }
+
+    .scan-bar-fill {
+      background: linear-gradient(to right, #facc15, #f97316);
     }
 
     /* Golden Ticket Style */
@@ -272,7 +293,7 @@
           <button
             onMouseDown={handleTap}
             onTouchStart={(e) => { e.preventDefault(); handleTap(); }}
-            className="active:scale-90 transform transition-transform bg-gradient-to-r from-yellow-400 to-amber-500 hover:from-yellow-500 hover:to-amber-600 text-white font-bold py-4 px-8 rounded-full shadow-lg border-b-4 border-amber-600 flex items-center gap-2 text-lg md:text-xl touch-none"
+            className="active:scale-90 transform transition-transform gradient-bg-gold hover:opacity-90 text-white font-bold py-4 px-8 rounded-full shadow-lg border-b-4 border-amber-600 flex items-center gap-2 text-lg md:text-xl touch-none"
           >
             <Heart size={24} fill="currentColor" /> SEND LOVE
           </button>
@@ -472,7 +493,7 @@
 
       useEffect(() => {
         if (stage === 'scan') {
-          const texts = ["Scanning Beauty Levels...", "Detecting Lovelyness...", "Analysing Chemistry...", "Match Found: 100%"];
+          const texts = ["Scanning Heart Rate...", "Detecting Butterflies...", "Analysing Chemistry...", "Match Found: 100%"];
           let prog = 0;
           const interval = setInterval(() => {
             prog += 1;
@@ -529,19 +550,19 @@
           <div className="z-10 w-full max-w-lg p-4 md:p-6 transition-all duration-700 font-body my-auto">
             
             {stage === 'welcome' && (
-              <div className="glass-card p-6 md:p-10 rounded-[2rem] text-center transform hover:scale-[1.02] transition-transform duration-500 border-yellow-300">
-                <div className="inline-flex items-center justify-center w-16 h-16 md:w-20 md:h-20 bg-gradient-to-tr from-yellow-400 to-orange-300 rounded-full mb-6 shadow-lg animate-pulse">
+              <div className="glass-card p-6 md:p-10 rounded-[2rem] text-center transform hover:scale-[1.02] transition-transform duration-500">
+                <div className="inline-flex items-center justify-center w-16 h-16 md:w-20 md:h-20 gradient-bg-icon rounded-full mb-6 shadow-lg animate-pulse">
                   <Lock className="w-8 h-8 md:w-10 md:h-10 text-white" />
                 </div>
-                <h1 className="text-5xl md:text-6xl font-display text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 to-amber-600 mb-4 text-glow pb-2 leading-relaxed">
-                  Complete if You <br/> Like me
+                <h1 className="text-5xl md:text-6xl font-display gradient-text-gold mb-4 text-glow pb-2 leading-relaxed">
+                  Top Secret <br/> Romance
                 </h1>
                 <p className="text-yellow-800 mb-8 text-lg md:text-xl font-light">
-                  Authorization required to see <br/> What's Inside.
+                  Authorization required to access <br/> my heart.
                 </p>
                 <button 
                   onClick={startJourney}
-                  className="w-full bg-gradient-to-r from-yellow-400 to-amber-500 text-white font-bold py-4 px-8 rounded-xl shadow-lg transform transition hover:-translate-y-1 hover:shadow-yellow-300/50 flex items-center justify-center gap-3 text-lg"
+                  className="w-full gradient-bg-gold text-white font-bold py-4 px-8 rounded-xl shadow-lg transform transition hover:-translate-y-1 hover:shadow-yellow-300/50 flex items-center justify-center gap-3 text-lg"
                 >
                   Verify Identity <Heart size={20} fill="white" />
                 </button>
@@ -549,7 +570,7 @@
             )}
 
             {stage === 'scan' && (
-              <div className="glass-card p-8 md:p-10 rounded-[2rem] text-center border-yellow-300">
+              <div className="glass-card p-8 md:p-10 rounded-[2rem] text-center">
                 <div className="relative w-24 h-24 md:w-32 md:h-32 mx-auto mb-8">
                    <div className="absolute inset-0 rounded-full border-4 border-yellow-100"></div>
                    <div className="absolute inset-0 rounded-full border-4 border-t-yellow-500 animate-spin"></div>
@@ -559,14 +580,14 @@
                 </div>
                 <h2 className="text-2xl md:text-3xl font-bold text-yellow-700 mb-4">Scanning...</h2>
                 <div className="h-3 w-full bg-yellow-100 rounded-full overflow-hidden mb-4">
-                  <div className="h-full bg-gradient-to-r from-yellow-400 to-orange-500 transition-all duration-100" style={{ width: `${scanProgress}%` }}></div>
+                  <div className="h-full scan-bar-fill transition-all duration-100" style={{ width: `${scanProgress}%` }}></div>
                 </div>
                 <p className="text-yellow-600 font-semibold italic">{scanText}</p>
               </div>
             )}
 
             {stage === 'memory' && (
-              <div className="glass-card p-4 md:p-8 rounded-[2rem] border-yellow-300">
+              <div className="glass-card p-4 md:p-8 rounded-[2rem]">
                 <h2 className="text-center text-3xl md:text-4xl font-display text-yellow-600 mb-2">Level 1</h2>
                 <p className="text-center text-yellow-800 mb-6 font-semibold">Match the Romance</p>
                 <div className="grid grid-cols-4 gap-2 md:gap-4">
@@ -577,7 +598,7 @@
                       className={`aspect-square rounded-xl md:rounded-2xl text-4xl md:text-6xl flex items-center justify-center transition-all duration-500 transform border-2 ${
                         flipped.includes(index) || matched.includes(index)
                           ? 'rotate-y-180 bg-white border-yellow-400 shadow-inner scale-95'
-                          : 'bg-gradient-to-br from-yellow-300 to-amber-400 border-transparent shadow-lg hover:-translate-y-1'
+                          : 'gradient-bg-icon border-transparent shadow-lg hover:-translate-y-1'
                       }`}
                       style={{ perspective: '1000px' }}
                     >
@@ -589,7 +610,7 @@
             )}
 
             {stage === 'charger' && (
-              <div className="glass-card p-6 md:p-8 rounded-[2rem] border-yellow-300 min-h-[400px]">
+              <div className="glass-card p-6 md:p-8 rounded-[2rem] min-h-[400px]">
                  <h2 className="text-center text-3xl md:text-4xl font-display text-yellow-600 mb-2">Level 2</h2>
                  <p className="text-center text-yellow-800 mb-4 font-semibold">Power Up My Courage!</p>
                  <VibeCharger onWin={() => {
@@ -600,7 +621,7 @@
             )}
 
             {stage === 'catcher' && (
-              <div className="glass-card p-4 md:p-6 rounded-[2rem] border-yellow-300">
+              <div className="glass-card p-4 md:p-6 rounded-[2rem]">
                 <h2 className="text-center text-3xl md:text-4xl font-display text-yellow-600 mb-2">Level 3</h2>
                 <p className="text-center text-yellow-800 mb-4 font-semibold">Collect the Affection</p>
                 <CatcherGame onWin={() => {
@@ -611,7 +632,7 @@
             )}
 
             {stage === 'lock' && (
-              <div className="glass-card p-6 md:p-8 rounded-[2rem] border-yellow-300 min-h-[400px]">
+              <div className="glass-card p-6 md:p-8 rounded-[2rem] min-h-[400px]">
                 <h2 className="text-center text-3xl md:text-4xl font-display text-yellow-600 mb-2">Final Level</h2>
                 <p className="text-center text-yellow-800 mb-4 font-semibold">Unlock My Heart</p>
                 <LoveLockGame onWin={() => {
@@ -622,20 +643,20 @@
             )}
 
             {stage === 'proposal' && (
-              <div className="glass-card p-6 md:p-10 rounded-[2rem] text-center animate-fade-in relative overflow-hidden border-yellow-400">
-                <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-400"></div>
+              <div className="glass-card p-6 md:p-10 rounded-[2rem] text-center animate-fade-in relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-2 scan-bar-fill"></div>
                 <Gift className="w-12 h-12 md:w-16 md:h-16 mx-auto text-yellow-500 mb-6 animate-bounce" />
                 <h2 className="text-2xl md:text-3xl font-bold text-yellow-800 mb-2">Access Granted!</h2>
                 <p className="text-yellow-700 mb-8">You have successfully unlocked everything.</p>
                 
-                <h1 className="text-4xl md:text-5xl font-display text-amber-600 mb-8 leading-tight">
+                <h1 className="text-4xl md:text-5xl font-display gradient-text-gold mb-8 leading-tight">
                   Will you be my <br/> Valentine?
                 </h1>
 
                 <div className="flex flex-col gap-4 items-center justify-center relative min-h-[120px]">
                   <button 
                     onClick={() => { fireConfetti(); setStage('success'); }}
-                    className="bg-yellow-500 hover:bg-yellow-600 text-white text-xl font-bold py-4 px-12 rounded-full shadow-xl transform transition hover:scale-110 active:scale-95 z-20 w-full max-w-xs flex items-center justify-center gap-2"
+                    className="gradient-bg-gold text-white text-xl font-bold py-4 px-12 rounded-full shadow-xl transform transition hover:scale-110 active:scale-95 z-20 w-full max-w-xs flex items-center justify-center gap-2"
                   >
                     YES! 💛
                   </button>
@@ -664,17 +685,17 @@
                 <div className="flex justify-between items-center mb-6 px-2 md:px-4">
                   <div className="text-left">
                     <p className="text-xs text-amber-600 uppercase">Passenger</p>
-                    <p className="text-lg md:text-xl font-bold text-amber-900 font-serif">Janelle Genobata</p>
+                    <p className="text-lg md:text-xl font-bold text-amber-900 font-serif">My Valentine</p>
                   </div>
                   <div className="text-right">
                     <p className="text-xs text-amber-600 uppercase">Date</p>
-                    <p className="text-lg md:text-xl font-bold text-amber-900 font-serif">March 1</p>
+                    <p className="text-lg md:text-xl font-bold text-amber-900 font-serif">Feb 14</p>
                   </div>
                 </div>
 
                 <div className="bg-amber-100/50 p-4 rounded-lg border border-amber-200 mb-6">
                   <p className="text-amber-800 italic font-serif text-base md:text-lg leading-relaxed">
-                    "This ticket entitles the bearer to one unforgettable day of full of love, Chocolae, and everlasting Care."
+                    "This ticket entitles the bearer to one unforgettable day of romance, flowers, and unlimited snacks."
                   </p>
                 </div>
 
